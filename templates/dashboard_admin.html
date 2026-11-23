@@ -30,6 +30,7 @@
 <div class="kartu">
   <h2>Layanan terlaris bulan ini</h2>
   {% if terlaris %}
+  <div class="gulir">
   <table>
     <tr><th>Layanan</th><th class="kanan">Jumlah transaksi</th><th class="kanan">Total nominal</th></tr>
     {% for l in terlaris %}
@@ -40,6 +41,7 @@
     </tr>
     {% endfor %}
   </table>
+  </div>
   {% else %}
     <p class="kecil">Belum ada pembayaran layanan bulan ini.</p>
   {% endif %}

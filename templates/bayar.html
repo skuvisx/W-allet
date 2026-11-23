@@ -30,6 +30,12 @@
 
     <label for="nominal">Nominal (Rp)</label>
     <input type="number" id="nominal" name="nominal" min="{{ batas[0] }}" max="{{ batas[1] }}" required>
+    <div class="cepat">
+      {% for pilihan in [20000, 50000, 100000, 200000] %}
+        <button type="button" class="tombol abu mini"
+                onclick="const el=document.getElementById('nominal'); el.value={{ pilihan }}; el.dispatchEvent(new Event('input'));">{{ pilihan|rupiah }}</button>
+      {% endfor %}
+    </div>
     <div class="kecil">Minimal {{ batas[0]|rupiah }}, maksimal {{ batas[1]|rupiah }}. Saldo dipotong sebesar nominal ditambah biaya admin layanan.</div>
 
     <label for="catatan">Catatan (boleh kosong)</label>
