@@ -11,7 +11,7 @@
     <input id="nama_metode" name="nama_metode" value="{{ item.nama_metode if item }}" maxlength="50" required autofocus>
 
     <label for="keterangan">Keterangan</label>
-    <input id="keterangan" name="keterangan" value="{{ item.keterangan if item }}" maxlength="200">
+    <input id="keterangan" name="keterangan" value="{{ (item.keterangan or "") if item }}" maxlength="200">
 
     {% if item %}
     <label class="centang">

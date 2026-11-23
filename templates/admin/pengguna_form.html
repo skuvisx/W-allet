@@ -21,9 +21,14 @@
     <div class="kecil">Saldo hanya berubah lewat transaksi, tidak bisa diketik langsung.</div>
 
     <label class="centang">
-      <input type="checkbox" name="aktif" {% if item.aktif %}checked{% endif %}>
+      <input type="checkbox" name="aktif" {% if item.aktif %}checked{% endif %} {% if item.id == user.id %}disabled{% endif %}>
       Aktif (bisa login dan bertransaksi)
     </label>
+    {% if item.id == user.id %}<div class="kecil">Akun Anda sendiri selalu aktif.</div>{% endif %}
+
+    <label for="password_baru">Reset password (boleh kosong)</label>
+    <input type="password" id="password_baru" name="password_baru" minlength="6" maxlength="50" autocomplete="new-password">
+    <div class="kecil">Isi hanya kalau pengguna lupa password. Kosongkan kalau tidak diganti.</div>
 
     <div class="tombol-form">
       <button class="tombol">Simpan</button>

@@ -1,4 +1,4 @@
-{# Form pilih periode. Dipakai di mutasi.html dan rekap.html lewat include. #}
+{# Form pilih periode. Dipakai di mutasi.html, harian.html, dan rekap.html lewat include. #}
 <div class="kartu tidak-dicetak">
   <form action="{{ alamat }}" method="get" class="saring">
     <div>
@@ -22,5 +22,6 @@
     {% endif %}
     <button class="tombol">Tampilkan</button>
     <button type="button" class="tombol abu" onclick="window.print()">Cetak / PDF</button>
+    <button class="tombol abu" name="format" value="csv">Unduh CSV (Excel)</button>
   </form>
 </div>

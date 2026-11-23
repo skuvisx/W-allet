@@ -49,8 +49,8 @@
       <li>
         <span class="tanda {{ 'masuk' if t.masuk }}" aria-hidden="true">{{ "+" if t.masuk else "−" }}</span>
         <span class="rincian">
-          {{ t|keterangan }}
-          <span class="kecil">{{ t.waktu|tanggal }}</span>
+          <a href="/transaksi/{{ t.id }}">{{ t|keterangan }}</a>
+          <span class="kecil">{{ t.waktu|tanggal }} &middot; {{ t.id|kode }}</span>
         </span>
         <span class="jumlah {{ 'hijau' if t.masuk }}">{{ "+" if t.masuk else "−" }}{{ (t.masuk or t.keluar)|rupiah }}</span>
       </li>

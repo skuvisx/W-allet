@@ -1,15 +1,37 @@
 """File master (khusus admin): kategori, layanan, metode isi saldo, dan pengguna."""
 from fastapi import APIRouter, Depends, Form, Request
+from psycopg2 import IntegrityError
 from psycopg2.errors import ForeignKeyViolation, UniqueViolation
 
 from database import ambil_satu, ambil_semua, get_db, jalankan
-from helper import Alihkan, alihkan, khusus_admin, pesan, render
+from helper import (
+    Alihkan,
+    alihkan,
+    hash_password,
+    khusus_admin,
+    periksa_data_diri,
+    periksa_email,
+    periksa_password,
+    periksa_teks,
+    pesan,
+    render,
+    rupiah,
+)
 
 router = APIRouter(prefix="/admin")
 
+BIAYA_ADMIN_MAKS = 100_000
 
-def simpan(request, db, sql, params, url):
-    """Jalankan INSERT atau UPDATE data master, lalu kembali ke halaman daftar."""
+
+def simpan(request, db, sql, params, url, salah=None, url_form=None):
+    """Jalankan INSERT atau UPDATE data master, lalu kembali ke halaman daftar.
+
+    Kalau isian salah (salah berisi teks), data tidak disimpan dan pengguna
+    dikembalikan ke form supaya bisa memperbaiki.
+    """
+    if salah:
+        pesan(request, salah, "gagal")
+        return alihkan(url_form or url)
     try:
         jalankan(db, sql, params)
         db.commit()
@@ -17,15 +39,23 @@ def simpan(request, db, sql, params, url):
     except UniqueViolation:
         db.rollback()
         pesan(request, "Gagal disimpan: nama, email, atau nomor itu sudah dipakai.", "gagal")
+        return alihkan(url_form or url)
+    except IntegrityError:
+        db.rollback()
+        pesan(request, "Gagal disimpan: data yang dipilih tidak valid.", "gagal")
+        return alihkan(url_form or url)
     return alihkan(url)
 
 
 def hapus(request, db, tabel, id, url):
     """Hapus satu baris data master. Ditolak kalau datanya masih dipakai tabel lain."""
     try:
-        jalankan(db, f"DELETE FROM {tabel} WHERE id = %s", (id,))
+        baris = jalankan(db, f"DELETE FROM {tabel} WHERE id = %s RETURNING id", (id,))
         db.commit()
-        pesan(request, "Data berhasil dihapus.")
+        if baris:
+            pesan(request, "Data berhasil dihapus.")
+        else:
+            pesan(request, "Data tidak ditemukan.", "gagal")
     except ForeignKeyViolation:
         db.rollback()
         pesan(
@@ -42,6 +72,12 @@ def cari(db, tabel, id, url):
     if not baris:
         raise Alihkan(url, "Data tidak ditemukan.")
     return baris
+
+
+def periksa_biaya(biaya_admin):
+    if not 0 <= biaya_admin <= BIAYA_ADMIN_MAKS:
+        return f"Biaya admin harus antara Rp 0 dan {rupiah(BIAYA_ADMIN_MAKS)}."
+    return None
 
 
 # ---------- Kategori ----------
@@ -74,11 +110,15 @@ def tambah_kategori(
     admin=Depends(khusus_admin),
     db=Depends(get_db),
 ):
+    nama_kategori, deskripsi = nama_kategori.strip(), deskripsi.strip()
+    salah = periksa_teks(nama_kategori, "Nama kategori", 50) or periksa_teks(
+        deskripsi, "Deskripsi", 200, wajib=False
+    )
     return simpan(
         request, db,
         "INSERT INTO kategori (nama_kategori, deskripsi) VALUES (%s, %s)",
-        (nama_kategori.strip(), deskripsi.strip()),
-        "/admin/kategori",
+        (nama_kategori, deskripsi or None),
+        "/admin/kategori", salah, request.url.path,
     )
 
 
@@ -99,11 +139,15 @@ def edit_kategori(
     admin=Depends(khusus_admin),
     db=Depends(get_db),
 ):
+    nama_kategori, deskripsi = nama_kategori.strip(), deskripsi.strip()
+    salah = periksa_teks(nama_kategori, "Nama kategori", 50) or periksa_teks(
+        deskripsi, "Deskripsi", 200, wajib=False
+    )
     return simpan(
         request, db,
         "UPDATE kategori SET nama_kategori = %s, deskripsi = %s WHERE id = %s",
-        (nama_kategori.strip(), deskripsi.strip(), id),
-        "/admin/kategori",
+        (nama_kategori, deskripsi or None, id),
+        "/admin/kategori", salah, request.url.path,
     )
 
 
@@ -117,22 +161,29 @@ def hapus_kategori(
 # ---------- Layanan ----------
 
 @router.get("/layanan")
-def daftar_layanan(request: Request, admin=Depends(khusus_admin), db=Depends(get_db)):
+def daftar_layanan(
+    request: Request, q: str = "", admin=Depends(khusus_admin), db=Depends(get_db)
+):
     data = ambil_semua(
         db,
         """
-        SELECT l.*, k.nama_kategori
+        SELECT l.*, k.nama_kategori,
+               (SELECT COUNT(*) FROM transaksi t WHERE t.layanan_id = l.id) AS jumlah_transaksi
         FROM layanan l
         JOIN kategori k ON k.id = l.kategori_id
+        WHERE l.nama_layanan ILIKE %s OR k.nama_kategori ILIKE %s
         ORDER BY k.nama_kategori, l.nama_layanan
         """,
+        (f"%{q}%", f"%{q}%"),
     )
-    return render(request, "admin/layanan.html", admin, data=data)
+    return render(request, "admin/layanan.html", admin, data=data, q=q)
 
 
 @router.get("/layanan/tambah")
 def form_tambah_layanan(request: Request, admin=Depends(khusus_admin), db=Depends(get_db)):
     kategori = ambil_semua(db, "SELECT * FROM kategori ORDER BY nama_kategori")
+    if not kategori:
+        raise Alihkan("/admin/kategori", "Buat minimal satu kategori dulu sebelum menambah layanan.")
     return render(request, "admin/layanan_form.html", admin, item=None, kategori=kategori)
 
 
@@ -141,15 +192,17 @@ def tambah_layanan(
     request: Request,
     nama_layanan: str = Form(...),
     kategori_id: int = Form(...),
-    biaya_admin: int = Form(0, ge=0),
+    biaya_admin: int = Form(0),
     admin=Depends(khusus_admin),
     db=Depends(get_db),
 ):
+    nama_layanan = nama_layanan.strip()
+    salah = periksa_teks(nama_layanan, "Nama layanan", 100) or periksa_biaya(biaya_admin)
     return simpan(
         request, db,
         "INSERT INTO layanan (nama_layanan, kategori_id, biaya_admin) VALUES (%s, %s, %s)",
-        (nama_layanan.strip(), kategori_id, biaya_admin),
-        "/admin/layanan",
+        (nama_layanan, kategori_id, biaya_admin),
+        "/admin/layanan", salah, request.url.path,
     )
 
 
@@ -168,11 +221,13 @@ def edit_layanan(
     request: Request,
     nama_layanan: str = Form(...),
     kategori_id: int = Form(...),
-    biaya_admin: int = Form(0, ge=0),
+    biaya_admin: int = Form(0),
     aktif: bool = Form(False),
     admin=Depends(khusus_admin),
     db=Depends(get_db),
 ):
+    nama_layanan = nama_layanan.strip()
+    salah = periksa_teks(nama_layanan, "Nama layanan", 100) or periksa_biaya(biaya_admin)
     return simpan(
         request, db,
         """
@@ -180,8 +235,8 @@ def edit_layanan(
         SET nama_layanan = %s, kategori_id = %s, biaya_admin = %s, aktif = %s
         WHERE id = %s
         """,
-        (nama_layanan.strip(), kategori_id, biaya_admin, aktif, id),
-        "/admin/layanan",
+        (nama_layanan, kategori_id, biaya_admin, aktif, id),
+        "/admin/layanan", salah, request.url.path,
     )
 
 
@@ -196,7 +251,15 @@ def hapus_layanan(
 
 @router.get("/metode")
 def daftar_metode(request: Request, admin=Depends(khusus_admin), db=Depends(get_db)):
-    data = ambil_semua(db, "SELECT * FROM metode_topup ORDER BY nama_metode")
+    data = ambil_semua(
+        db,
+        """
+        SELECT m.*,
+               (SELECT COUNT(*) FROM transaksi t WHERE t.metode_id = m.id) AS jumlah_transaksi
+        FROM metode_topup m
+        ORDER BY m.nama_metode
+        """,
+    )
     return render(request, "admin/metode.html", admin, data=data)
 
 
@@ -213,11 +276,15 @@ def tambah_metode(
     admin=Depends(khusus_admin),
     db=Depends(get_db),
 ):
+    nama_metode, keterangan = nama_metode.strip(), keterangan.strip()
+    salah = periksa_teks(nama_metode, "Nama metode", 50) or periksa_teks(
+        keterangan, "Keterangan", 200, wajib=False
+    )
     return simpan(
         request, db,
         "INSERT INTO metode_topup (nama_metode, keterangan) VALUES (%s, %s)",
-        (nama_metode.strip(), keterangan.strip()),
-        "/admin/metode",
+        (nama_metode, keterangan or None),
+        "/admin/metode", salah, request.url.path,
     )
 
 
@@ -239,11 +306,15 @@ def edit_metode(
     admin=Depends(khusus_admin),
     db=Depends(get_db),
 ):
+    nama_metode, keterangan = nama_metode.strip(), keterangan.strip()
+    salah = periksa_teks(nama_metode, "Nama metode", 50) or periksa_teks(
+        keterangan, "Keterangan", 200, wajib=False
+    )
     return simpan(
         request, db,
         "UPDATE metode_topup SET nama_metode = %s, keterangan = %s, aktif = %s WHERE id = %s",
-        (nama_metode.strip(), keterangan.strip(), aktif, id),
-        "/admin/metode",
+        (nama_metode, keterangan or None, aktif, id),
+        "/admin/metode", salah, request.url.path,
     )
 
 
@@ -255,7 +326,6 @@ def hapus_metode(
 
 
 # ---------- Pengguna ----------
-# Pengguna baru dibuat lewat halaman Register, jadi di sini hanya lihat, ubah, dan hapus.
 
 @router.get("/pengguna")
 def daftar_pengguna(
@@ -274,6 +344,38 @@ def daftar_pengguna(
     return render(request, "admin/pengguna.html", admin, data=data, q=q)
 
 
+@router.get("/pengguna/tambah")
+def form_tambah_pengguna(request: Request, admin=Depends(khusus_admin)):
+    return render(request, "admin/pengguna_tambah.html", admin)
+
+
+@router.post("/pengguna/tambah")
+def tambah_pengguna(
+    request: Request,
+    nama: str = Form(...),
+    email: str = Form(...),
+    no_hp: str = Form(...),
+    role: str = Form("pengguna"),
+    password: str = Form(...),
+    ulangi: str = Form(...),
+    admin=Depends(khusus_admin),
+    db=Depends(get_db),
+):
+    nama, email, no_hp = nama.strip(), email.strip().lower(), no_hp.strip()
+    salah = (
+        periksa_data_diri(nama, no_hp)
+        or periksa_email(email)
+        or periksa_password(password, ulangi)
+        or (None if role in ("admin", "pengguna") else "Peran tidak valid.")
+    )
+    return simpan(
+        request, db,
+        "INSERT INTO pengguna (nama, email, no_hp, password, role) VALUES (%s, %s, %s, %s, %s)",
+        (nama, email, no_hp, hash_password(password) if not salah else "", role),
+        "/admin/pengguna", salah, request.url.path,
+    )
+
+
 @router.get("/pengguna/{id}/edit")
 def form_edit_pengguna(
     id: int, request: Request, admin=Depends(khusus_admin), db=Depends(get_db)
@@ -289,17 +391,24 @@ def edit_pengguna(
     nama: str = Form(...),
     no_hp: str = Form(...),
     aktif: bool = Form(False),
+    password_baru: str = Form(""),
     admin=Depends(khusus_admin),
     db=Depends(get_db),
 ):
+    nama, no_hp = nama.strip(), no_hp.strip()
     if id == admin["id"]:
         aktif = True  # admin tidak bisa menonaktifkan akunnya sendiri
-    return simpan(
-        request, db,
-        "UPDATE pengguna SET nama = %s, no_hp = %s, aktif = %s WHERE id = %s",
-        (nama.strip(), no_hp.strip(), aktif, id),
-        "/admin/pengguna",
-    )
+
+    salah = periksa_data_diri(nama, no_hp)
+    if not salah and password_baru:
+        salah = periksa_password(password_baru, password_baru)
+    if password_baru and not salah:
+        sql = "UPDATE pengguna SET nama = %s, no_hp = %s, aktif = %s, password = %s WHERE id = %s"
+        params = (nama, no_hp, aktif, hash_password(password_baru), id)
+    else:
+        sql = "UPDATE pengguna SET nama = %s, no_hp = %s, aktif = %s WHERE id = %s"
+        params = (nama, no_hp, aktif, id)
+    return simpan(request, db, sql, params, "/admin/pengguna", salah, request.url.path)
 
 
 @router.post("/pengguna/{id}/hapus")
@@ -308,5 +417,9 @@ def hapus_pengguna(
 ):
     if id == admin["id"]:
         pesan(request, "Akun sendiri tidak bisa dihapus.", "gagal")
+        return alihkan("/admin/pengguna")
+    sisa = ambil_satu(db, "SELECT saldo FROM pengguna WHERE id = %s", (id,))
+    if sisa and sisa["saldo"] > 0:
+        pesan(request, "Pengguna yang masih punya saldo tidak bisa dihapus. Nonaktifkan saja.", "gagal")
         return alihkan("/admin/pengguna")
     return hapus(request, db, "pengguna", id, "/admin/pengguna")

@@ -13,7 +13,7 @@
     {% for k in data %}
     <tr>
       <td>{{ k.nama_kategori }}</td>
-      <td>{{ k.deskripsi }}</td>
+      <td>{{ k.deskripsi or "" }}</td>
       <td class="kanan">{{ k.jumlah_layanan }}</td>
       <td>
         <div class="aksi-baris">

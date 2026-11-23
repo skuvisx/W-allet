@@ -9,11 +9,12 @@
 
 <div class="kartu gulir">
   <table>
-    <tr><th>Nama metode</th><th>Keterangan</th><th>Status</th><th>Aksi</th></tr>
+    <tr><th>Nama metode</th><th>Keterangan</th><th class="kanan">Dipakai</th><th>Status</th><th>Aksi</th></tr>
     {% for m in data %}
     <tr>
       <td>{{ m.nama_metode }}</td>
-      <td>{{ m.keterangan }}</td>
+      <td>{{ m.keterangan or "" }}</td>
+      <td class="kanan">{{ m.jumlah_transaksi }}x</td>
       <td>
         {% if m.aktif %}<span class="lencana ya">Aktif</span>
         {% else %}<span class="lencana tidak">Nonaktif</span>{% endif %}
@@ -21,16 +22,19 @@
       <td>
         <div class="aksi-baris">
           <a class="tombol abu mini" href="/admin/metode/{{ m.id }}/edit">Edit</a>
+          {% if not m.jumlah_transaksi %}
           <form action="/admin/metode/{{ m.id }}/hapus" method="post" data-nama="{{ m.nama_metode }}"
                 onsubmit="return confirm('Hapus metode ' + this.dataset.nama + '?')">
             <button class="tombol bahaya mini">Hapus</button>
           </form>
+          {% endif %}
         </div>
       </td>
     </tr>
     {% else %}
-    <tr><td colspan="4" class="kecil">Belum ada metode isi saldo.</td></tr>
+    <tr><td colspan="5" class="kecil">Belum ada metode isi saldo.</td></tr>
     {% endfor %}
   </table>
 </div>
+<p class="kecil">Metode yang sudah dipakai transaksi tidak bisa dihapus, hanya dinonaktifkan lewat Edit.</p>
 {% endblock %}

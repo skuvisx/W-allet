@@ -31,7 +31,7 @@
     <tbody>
       {% for t in data %}
       <tr>
-        <td class="rapat">{{ t.waktu|tanggal }}<div class="kecil">{{ t.id|kode }}</div></td>
+        <td class="rapat">{{ t.waktu|tanggal }}<div class="kecil"><a href="/transaksi/{{ t.id }}" title="Lihat bukti transaksi">{{ t.id|kode }}</a></div></td>
         {% if admin %}<td>{{ t.nama_pengguna }}</td>{% endif %}
         <td class="rapat">{{ LABEL_JENIS[t.jenis] }}</td>
         <td>{{ t|keterangan }}</td>

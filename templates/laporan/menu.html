@@ -9,6 +9,10 @@
     <h2>{{ "Laporan Transaksi" if user.role == "admin" else "Mutasi Saldo" }}</h2>
     <div class="kecil">Daftar transaksi per periode, lengkap dengan uang masuk, uang keluar, dan saldo akhir.</div>
   </a>
+  <a class="kartu" href="/laporan/harian">
+    <h2>Rekap Harian</h2>
+    <div class="kecil">Total isi saldo, kirim, bayar, dan biaya admin untuk setiap hari dalam periode.</div>
+  </a>
   <a class="kartu" href="/laporan/kategori">
     <h2>Rekap per Kategori</h2>
     <div class="kecil">Total pembayaran layanan yang dikelompokkan per kategori.</div>
@@ -18,10 +22,15 @@
     <h2>Rekap per Layanan</h2>
     <div class="kecil">Jumlah transaksi, nominal, dan pendapatan biaya admin tiap layanan.</div>
   </a>
+  <a class="kartu" href="/laporan/metode">
+    <h2>Rekap Isi Saldo per Metode</h2>
+    <div class="kecil">Jumlah dan nominal isi saldo untuk setiap metode (transfer bank, minimarket, dll).</div>
+  </a>
   <a class="kartu" href="/laporan/pengguna">
     <h2>Laporan Pengguna</h2>
     <div class="kecil">Daftar pengguna beserta saldo dan jumlah transaksinya.</div>
   </a>
   {% endif %}
 </div>
+<p class="kecil">Semua laporan bisa dicetak / disimpan sebagai PDF dan diunduh sebagai file CSV untuk dibuka di Excel.</p>
 {% endblock %}

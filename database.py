@@ -11,7 +11,13 @@ load_dotenv()  # membaca file .env kalau ada
 DATABASE_URL = os.getenv(
     "DATABASE_URL",
     "postgresql://postgres:admin@localhost:5432/db_w-allet",
-)
+).strip()
+
+
+def buka_koneksi():
+    """Buka satu koneksi baru. connect_timeout supaya tidak menunggu selamanya
+    kalau server database (misalnya Neon yang sedang tidur) lambat merespons."""
+    return psycopg2.connect(DATABASE_URL, cursor_factory=RealDictCursor, connect_timeout=15)
 
 
 def get_db():
@@ -20,7 +26,7 @@ def get_db():
     Perubahan data baru tersimpan kalau endpoint memanggil db.commit().
     Kalau terjadi error sebelum commit, semua perubahan dibatalkan.
     """
-    conn = psycopg2.connect(DATABASE_URL, cursor_factory=RealDictCursor)
+    conn = buka_koneksi()
     try:
         yield conn
     finally:

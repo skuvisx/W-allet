@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+{% block judul %}Rekap Harian{% endblock %}
+
+{% block isi %}
+<h1>Rekap Harian</h1>
+
+{% include "laporan/_periode.html" %}
+
+<div class="kartu">
+  <p>
+    <strong>{{ NAMA_APLIKASI }}</strong><br>
+    {% if not admin %}Pemilik akun: {{ user.nama }} ({{ user.no_hp }})<br>{% endif %}
+    Periode: {{ dari.strftime("%d-%m-%Y") }} s.d. {{ sampai.strftime("%d-%m-%Y") }}
+  </p>
+
+  <div class="gulir">
+  <table>
+    <thead>
+      <tr>
+        <th>Tanggal</th>
+        <th class="kanan">Jumlah transaksi</th>
+        <th class="kanan">Isi saldo</th>
+        {% if not admin %}<th class="kanan">Terima</th>{% endif %}
+        <th class="kanan">Kirim</th>
+        <th class="kanan">Bayar layanan</th>
+        <th class="kanan">Biaya admin</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for b in data %}
+      <tr>
+        <td>{{ b.tanggal.strftime("%d-%m-%Y") }}</td>
+        <td class="kanan">{{ b.jumlah }}</td>
+        <td class="kanan">{{ b.topup|rupiah }}</td>
+        {% if not admin %}<td class="kanan">{{ b.terima|rupiah }}</td>{% endif %}
+        <td class="kanan">{{ b.kirim|rupiah }}</td>
+        <td class="kanan">{{ b.bayar|rupiah }}</td>
+        <td class="kanan">{{ b.biaya_admin|rupiah }}</td>
+      </tr>
+      {% else %}
+      <tr><td colspan="{{ 6 if admin else 7 }}" class="kecil">Tidak ada transaksi pada periode ini.</td></tr>
+      {% endfor %}
+    </tbody>
+    {% if data %}
+    <tfoot>
+      <tr>
+        <td>Total ({{ data|length }} hari)</td>
+        <td class="kanan">{{ data|sum(attribute="jumlah") }}</td>
+        <td class="kanan">{{ data|sum(attribute="topup")|rupiah }}</td>
+        {% if not admin %}<td class="kanan">{{ data|sum(attribute="terima")|rupiah }}</td>{% endif %}
+        <td class="kanan">{{ data|sum(attribute="kirim")|rupiah }}</td>
+        <td class="kanan">{{ data|sum(attribute="bayar")|rupiah }}</td>
+        <td class="kanan">{{ data|sum(attribute="biaya_admin")|rupiah }}</td>
+      </tr>
+    </tfoot>
+    {% endif %}
+  </table>
+  </div>
+</div>
+{% endblock %}

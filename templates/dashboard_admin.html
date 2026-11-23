@@ -53,7 +53,7 @@
     <tr><th>Waktu dan kode</th><th>Pengguna</th><th>Keterangan</th><th class="kanan">Nominal</th></tr>
     {% for t in terbaru %}
     <tr>
-      <td class="rapat">{{ t.waktu|tanggal }}<div class="kecil">{{ t.id|kode }}</div></td>
+      <td class="rapat">{{ t.waktu|tanggal }}<div class="kecil"><a href="/transaksi/{{ t.id }}" title="Lihat bukti transaksi">{{ t.id|kode }}</a></div></td>
       <td>{{ t.nama_pengguna }}</td>
       <td>{{ t|keterangan }}</td>
       <td class="kanan">{{ t.nominal|rupiah }}</td>

@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+{% block judul %}Bukti Transaksi {{ t.id|kode }}{% endblock %}
+{% block lebar %}sempit{% endblock %}
+
+{% block isi %}
+<div class="kartu struk">
+  <div class="struk-kepala">
+    <div class="merek">W<span class="strip"></span>allet</div>
+    <div class="kecil">Bukti Transaksi</div>
+  </div>
+
+  <div class="struk-nominal {{ 'hijau' if t.masuk }}">
+    {{ "+" if t.masuk else "−" }}{{ (t.masuk or t.keluar)|rupiah }}
+  </div>
+  <div class="struk-status"><span class="lencana ya">Berhasil</span></div>
+
+  <dl class="rincian-struk">
+    <dt>Kode transaksi</dt><dd>{{ t.id|kode }}</dd>
+    <dt>Waktu</dt><dd>{{ t.waktu|tanggal }} WIB</dd>
+    <dt>Jenis</dt><dd>{{ LABEL_JENIS[t.jenis] }}</dd>
+    <dt>Pemilik akun</dt><dd>{{ t.nama_pengguna }} ({{ t.hp_pengguna }})</dd>
+
+    {% if t.jenis == "topup" %}
+      <dt>Metode</dt><dd>{{ t.nama_metode }}</dd>
+    {% elif t.jenis == "kirim" %}
+      <dt>Penerima</dt><dd>{{ t.nama_lawan }} ({{ t.hp_lawan }})</dd>
+    {% elif t.jenis == "terima" %}
+      <dt>Pengirim</dt><dd>{{ t.nama_lawan }} ({{ t.hp_lawan }})</dd>
+    {% else %}
+      <dt>Layanan</dt><dd>{{ t.nama_layanan }} ({{ t.nama_kategori }})</dd>
+      {% if t.nomor_tujuan %}<dt>Nomor tujuan</dt><dd>{{ t.nomor_tujuan }}</dd>{% endif %}
+    {% endif %}
+    {% if t.catatan %}<dt>Catatan</dt><dd>{{ t.catatan }}</dd>{% endif %}
+
+    <dt>Nominal</dt><dd>{{ t.nominal|rupiah }}</dd>
+    {% if t.jenis == "bayar" %}
+      <dt>Biaya admin</dt><dd>{{ t.biaya_admin|rupiah }}</dd>
+      <dt>Total dibayar</dt><dd><strong>{{ (t.nominal + t.biaya_admin)|rupiah }}</strong></dd>
+    {% endif %}
+    <dt>Saldo setelah transaksi</dt><dd>{{ t.saldo_akhir|rupiah }}</dd>
+  </dl>
+
+  <p class="kecil">Simpan bukti ini sebagai tanda transaksi yang sah di {{ NAMA_APLIKASI }}. Saldo hanya simulasi.</p>
+
+  <div class="tombol-form tidak-dicetak">
+    <button type="button" class="tombol" onclick="window.print()">Cetak / PDF</button>
+    <a class="tombol abu" href="/laporan/mutasi">Lihat mutasi</a>
+    <a class="tombol abu" href="/">Dashboard</a>
+  </div>
+</div>
+{% endblock %}

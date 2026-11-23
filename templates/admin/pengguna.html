@@ -2,7 +2,10 @@
 {% block judul %}Pengguna{% endblock %}
 
 {% block isi %}
-<h1>Master Pengguna</h1>
+<div class="judul-halaman">
+  <h1>Master Pengguna</h1>
+  <a class="tombol" href="/admin/pengguna/tambah">Tambah Pengguna</a>
+</div>
 
 <div class="kartu">
   <form action="/admin/pengguna" method="get" class="saring">
@@ -49,5 +52,5 @@
     {% endfor %}
   </table>
 </div>
-<p class="kecil">Pengguna baru dibuat lewat halaman Daftar. Pengguna yang sudah punya transaksi tidak bisa dihapus, hanya dinonaktifkan.</p>
+<p class="kecil">Pengguna bisa mendaftar sendiri lewat halaman Daftar atau ditambahkan admin di sini. Pengguna yang sudah punya transaksi atau masih punya saldo tidak bisa dihapus, hanya dinonaktifkan.</p>
 {% endblock %}

@@ -1,6 +1,4 @@
 """Login, register, logout, dan profil."""
-import re
-
 from fastapi import APIRouter, Depends, Form, Request
 from psycopg2.errors import UniqueViolation
 
@@ -9,6 +7,8 @@ from helper import (
     alihkan,
     cek_password,
     hash_password,
+    periksa_data_diri,
+    periksa_email,
     periksa_password,
     pesan,
     render,
@@ -16,15 +16,6 @@ from helper import (
 )
 
 router = APIRouter()
-
-
-def periksa_data_diri(nama, no_hp):
-    """Kembalikan teks kesalahan, atau None kalau data sudah benar."""
-    if not 3 <= len(nama) <= 100:
-        return "Nama harus 3 sampai 100 huruf."
-    if not re.fullmatch(r"08\d{8,13}", no_hp):
-        return "Nomor HP harus diawali 08 dan berisi 10 sampai 15 angka."
-    return None
 
 
 # ---------- Login dan logout ----------
@@ -46,7 +37,7 @@ def login(
     user = ambil_satu(
         db,
         "SELECT id, password, aktif FROM pengguna WHERE email = %s",
-        (email.strip().lower(),),
+        (email.strip().lower()[:100],),
     )
     if not user or not cek_password(password, user["password"]):
         pesan(request, "Email atau password salah.", "gagal")
@@ -55,6 +46,7 @@ def login(
         pesan(request, "Akun ini dinonaktifkan. Hubungi admin.", "gagal")
         return alihkan("/login")
 
+    request.session.clear()  # buang sisa session lama sebelum login baru
     request.session["user_id"] = user["id"]
     return alihkan("/")
 
@@ -62,6 +54,7 @@ def login(
 @router.get("/logout")
 def logout(request: Request):
     request.session.clear()
+    pesan(request, "Anda sudah keluar.")
     return alihkan("/login")
 
 
@@ -69,6 +62,8 @@ def logout(request: Request):
 
 @router.get("/register")
 def form_register(request: Request):
+    if request.session.get("user_id"):
+        return alihkan("/")
     return render(request, "register.html", isi={})
 
 
@@ -84,11 +79,7 @@ def register(
 ):
     nama, email, no_hp = nama.strip(), email.strip().lower(), no_hp.strip()
 
-    salah = periksa_data_diri(nama, no_hp)
-    if not salah and not re.fullmatch(r"[^@\s]+@[^@\s]+\.[^@\s]+", email):
-        salah = "Format email tidak benar."
-    if not salah:
-        salah = periksa_password(password, ulangi)
+    salah = periksa_data_diri(nama, no_hp) or periksa_email(email) or periksa_password(password, ulangi)
     if not salah:
         try:
             jalankan(
@@ -98,6 +89,7 @@ def register(
             )
             db.commit()
         except UniqueViolation:
+            db.rollback()
             salah = "Email atau nomor HP itu sudah terdaftar."
 
     if salah:
@@ -152,6 +144,7 @@ def simpan_profil(
                 )
             db.commit()
         except UniqueViolation:
+            db.rollback()
             salah = "Nomor HP itu sudah dipakai akun lain."
 
     if salah:

@@ -11,7 +11,7 @@
     <input id="nama_kategori" name="nama_kategori" value="{{ item.nama_kategori if item }}" maxlength="50" required autofocus>
 
     <label for="deskripsi">Deskripsi</label>
-    <input id="deskripsi" name="deskripsi" value="{{ item.deskripsi if item }}" maxlength="200">
+    <input id="deskripsi" name="deskripsi" value="{{ (item.deskripsi or "") if item }}" maxlength="200">
 
     <div class="tombol-form">
       <button class="tombol">Simpan</button>

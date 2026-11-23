@@ -7,14 +7,26 @@
   <a class="tombol" href="/admin/layanan/tambah">Tambah Layanan</a>
 </div>
 
+<div class="kartu">
+  <form action="/admin/layanan" method="get" class="saring">
+    <div>
+      <label for="q">Cari nama layanan atau kategori</label>
+      <input id="q" name="q" value="{{ q }}">
+    </div>
+    <button class="tombol">Cari</button>
+    {% if q %}<a class="tombol abu" href="/admin/layanan">Hapus pencarian</a>{% endif %}
+  </form>
+</div>
+
 <div class="kartu gulir">
   <table>
-    <tr><th>Nama layanan</th><th>Kategori</th><th class="kanan">Biaya admin</th><th>Status</th><th>Aksi</th></tr>
+    <tr><th>Nama layanan</th><th>Kategori</th><th class="kanan">Biaya admin</th><th class="kanan">Dipakai</th><th>Status</th><th>Aksi</th></tr>
     {% for l in data %}
     <tr>
       <td>{{ l.nama_layanan }}</td>
       <td>{{ l.nama_kategori }}</td>
       <td class="kanan">{{ l.biaya_admin|rupiah }}</td>
+      <td class="kanan">{{ l.jumlah_transaksi }}x</td>
       <td>
         {% if l.aktif %}<span class="lencana ya">Aktif</span>
         {% else %}<span class="lencana tidak">Nonaktif</span>{% endif %}
@@ -22,16 +34,19 @@
       <td>
         <div class="aksi-baris">
           <a class="tombol abu mini" href="/admin/layanan/{{ l.id }}/edit">Edit</a>
+          {% if not l.jumlah_transaksi %}
           <form action="/admin/layanan/{{ l.id }}/hapus" method="post" data-nama="{{ l.nama_layanan }}"
                 onsubmit="return confirm('Hapus layanan ' + this.dataset.nama + '?')">
             <button class="tombol bahaya mini">Hapus</button>
           </form>
+          {% endif %}
         </div>
       </td>
     </tr>
     {% else %}
-    <tr><td colspan="5" class="kecil">Belum ada layanan.</td></tr>
+    <tr><td colspan="6" class="kecil">{{ "Tidak ada layanan yang cocok." if q else "Belum ada layanan." }}</td></tr>
     {% endfor %}
   </table>
 </div>
+<p class="kecil">Layanan yang sudah dipakai transaksi tidak bisa dihapus, hanya dinonaktifkan lewat Edit.</p>
 {% endblock %}

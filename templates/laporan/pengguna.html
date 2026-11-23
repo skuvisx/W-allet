@@ -4,7 +4,10 @@
 {% block isi %}
 <div class="judul-halaman">
   <h1>Laporan Pengguna</h1>
-  <button type="button" class="tombol abu tidak-dicetak" onclick="window.print()">Cetak / PDF</button>
+  <div class="aksi-baris tidak-dicetak">
+    <a class="tombol abu" href="/laporan/pengguna?format=csv">Unduh CSV (Excel)</a>
+    <button type="button" class="tombol abu" onclick="window.print()">Cetak / PDF</button>
+  </div>
 </div>
 
 <div class="kartu">

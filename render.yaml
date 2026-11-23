@@ -1,0 +1,19 @@
+# Render Blueprint untuk deploy otomatis W-allet (gratis).
+# Database PostgreSQL gratis dapat dibuat di Neon (https://neon.tech),
+# lalu isi connection string-nya ke environment variable DATABASE_URL di Render.
+
+services:
+  - type: web
+    name: w-allet
+    runtime: python
+    plan: free
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn main:app --host 0.0.0.0 --port $PORT
+    healthCheckPath: /health
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.12.8
+      - key: SECRET_KEY
+        generateValue: true
+      - key: DATABASE_URL
+        sync: false

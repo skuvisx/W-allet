@@ -7,14 +7,17 @@
   <h1>Bayar Layanan</h1>
   <p class="kecil">Saldo sekarang: {{ user.saldo|rupiah }}</p>
 
-  <form action="/bayar" method="post">
+  {% if not layanan %}
+    <p>Belum ada layanan yang bisa dibayar. Hubungi admin.</p>
+  {% else %}
+  <form action="/bayar" method="post" id="form-bayar">
     <label for="layanan_id">Layanan</label>
     <select id="layanan_id" name="layanan_id" required>
       <option value="" disabled selected>Pilih layanan</option>
       {% for nama_kategori, daftar in layanan|groupby("nama_kategori") %}
         <optgroup label="{{ nama_kategori }}">
           {% for l in daftar %}
-            <option value="{{ l.id }}">
+            <option value="{{ l.id }}" data-biaya="{{ l.biaya_admin|int }}">
               {{ l.nama_layanan }}{% if l.biaya_admin %} (biaya admin {{ l.biaya_admin|rupiah }}){% endif %}
             </option>
           {% endfor %}
@@ -27,15 +30,45 @@
 
     <label for="nominal">Nominal (Rp)</label>
     <input type="number" id="nominal" name="nominal" min="{{ batas[0] }}" max="{{ batas[1] }}" required>
-    <div class="kecil">Saldo dipotong sebesar nominal ditambah biaya admin layanan.</div>
+    <div class="kecil">Minimal {{ batas[0]|rupiah }}, maksimal {{ batas[1]|rupiah }}. Saldo dipotong sebesar nominal ditambah biaya admin layanan.</div>
 
     <label for="catatan">Catatan (boleh kosong)</label>
     <input id="catatan" name="catatan" maxlength="100">
+
+    <div class="total-bayar">
+      <span>Total dipotong dari saldo</span>
+      <strong id="total">Rp 0</strong>
+    </div>
 
     <div class="tombol-form">
       <button class="tombol">Bayar</button>
       <a class="tombol abu" href="/">Batal</a>
     </div>
   </form>
+  {% endif %}
 </div>
+
+{% if layanan %}
+<script>
+  // Hitung total (nominal + biaya admin) setiap kali layanan atau nominal berubah.
+  const pilih = document.getElementById("layanan_id");
+  const kolomNominal = document.getElementById("nominal");
+  const teksTotal = document.getElementById("total");
+  const saldo = {{ user.saldo|int }};
+  function hitung() {
+    const opsi = pilih.options[pilih.selectedIndex];
+    const biaya = Number(opsi && opsi.dataset.biaya || 0);
+    const total = Number(kolomNominal.value || 0) + biaya;
+    teksTotal.textContent = "Rp " + total.toLocaleString("id-ID");
+    teksTotal.className = total > saldo ? "merah" : "";
+    return total;
+  }
+  pilih.addEventListener("change", hitung);
+  kolomNominal.addEventListener("input", hitung);
+  document.getElementById("form-bayar").addEventListener("submit", (e) => {
+    const total = hitung();
+    if (!confirm("Bayar dengan total Rp " + total.toLocaleString("id-ID") + "?")) e.preventDefault();
+  });
+</script>
+{% endif %}
 {% endblock %}

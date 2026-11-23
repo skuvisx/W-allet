@@ -1,0 +1,12 @@
+{% extends "base.html" %}
+{% block judul %}{{ judul }}{% endblock %}
+
+{% block isi %}
+<div class="kode-error">{{ kode }}</div>
+<h1>{{ judul }}</h1>
+<p>{{ teks }}</p>
+<div class="tombol-form">
+  <a class="tombol" href="/">Kembali ke Dashboard</a>
+  <a class="tombol abu" href="javascript:history.back()">Halaman sebelumnya</a>
+</div>
+{% endblock %}

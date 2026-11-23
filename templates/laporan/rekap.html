@@ -1,4 +1,4 @@
-{# Dipakai dua laporan: rekap per kategori dan rekap per layanan. #}
+{# Dipakai tiga laporan: rekap per kategori, per layanan, dan per metode isi saldo. #}
 {% extends "base.html" %}
 {% block judul %}{{ judul }}{% endblock %}
 
@@ -21,21 +21,29 @@
         <th>{{ kolom }}</th>
         <th class="kanan">Jumlah transaksi</th>
         <th class="kanan">Nominal</th>
+        {% if ada_biaya %}
         <th class="kanan">Biaya admin</th>
         <th class="kanan">Total</th>
+        {% endif %}
+        <th class="kanan">Porsi</th>
       </tr>
     </thead>
     <tbody>
+      {% set total_semua = data|sum(attribute="total" if ada_biaya else "nominal") %}
       {% for baris in data %}
+      {% set nilai = baris.total if ada_biaya else baris.nominal %}
       <tr>
         <td>{{ baris.nama }}</td>
         <td class="kanan">{{ baris.jumlah }}</td>
         <td class="kanan">{{ baris.nominal|rupiah }}</td>
+        {% if ada_biaya %}
         <td class="kanan">{{ baris.biaya_admin|rupiah }}</td>
         <td class="kanan">{{ baris.total|rupiah }}</td>
+        {% endif %}
+        <td class="kanan">{{ "%.1f"|format(nilai / total_semua * 100) if total_semua else 0 }}%</td>
       </tr>
       {% else %}
-      <tr><td colspan="5" class="kecil">Tidak ada pembayaran layanan pada periode ini.</td></tr>
+      <tr><td colspan="{{ 6 if ada_biaya else 4 }}" class="kecil">Tidak ada transaksi pada periode ini.</td></tr>
       {% endfor %}
     </tbody>
     {% if data %}
@@ -44,8 +52,11 @@
         <td>Total</td>
         <td class="kanan">{{ data|sum(attribute="jumlah") }}</td>
         <td class="kanan">{{ data|sum(attribute="nominal")|rupiah }}</td>
+        {% if ada_biaya %}
         <td class="kanan">{{ data|sum(attribute="biaya_admin")|rupiah }}</td>
         <td class="kanan">{{ data|sum(attribute="total")|rupiah }}</td>
+        {% endif %}
+        <td class="kanan">100%</td>
       </tr>
     </tfoot>
     {% endif %}

@@ -7,11 +7,17 @@
   <h1>Isi Saldo</h1>
   <p class="kecil">Saldo sekarang: {{ user.saldo|rupiah }}</p>
 
+  {% if not metode %}
+    <p>Belum ada metode isi saldo yang aktif. Hubungi admin.</p>
+    <div class="tombol-form">
+      <a class="tombol abu" href="/">Kembali</a>
+    </div>
+  {% else %}
   <form action="/topup" method="post">
     <label for="metode_id">Metode</label>
     <select id="metode_id" name="metode_id" required>
       {% for m in metode %}
-        <option value="{{ m.id }}">{{ m.nama_metode }}</option>
+        <option value="{{ m.id }}">{{ m.nama_metode }}{% if m.keterangan %} — {{ m.keterangan }}{% endif %}</option>
       {% endfor %}
     </select>
 
@@ -30,5 +36,6 @@
       <a class="tombol abu" href="/">Batal</a>
     </div>
   </form>
+  {% endif %}
 </div>
 {% endblock %}
