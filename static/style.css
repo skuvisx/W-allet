@@ -511,7 +511,8 @@ tfoot td { font-weight: 800; border-top: 2px solid var(--tinta); background: rgb
 @media (max-width: 860px) {
   .rangka { display: block; min-height: 100vh; }
 
-  /* Header atas sticky: logo di kiri, profil + keluar di kanan */
+  /* Header atas sticky: logo di kiri, profil + keluar di kanan.
+     Jangan gunakan backdrop-filter/transform pada .sisi agar position:fixed pada nav tetap mengacu ke layar. */
   .sisi {
     position: sticky;
     top: 0;
@@ -521,10 +522,10 @@ tfoot td { font-weight: 800; border-top: 2px solid var(--tinta); background: rgb
     align-items: center;
     gap: 10px;
     padding: 10px 16px;
-    background: rgba(255, 255, 255, 0.94);
-    backdrop-filter: blur(12px);
+    background: var(--permukaan);
     border-right: 0;
     border-bottom: 1px solid var(--garis);
+    box-shadow: 0 2px 10px rgba(22, 32, 74, 0.04);
   }
   .sisi .merek { padding: 0; font-size: 22px; }
 
@@ -559,25 +560,24 @@ tfoot td { font-weight: 800; border-top: 2px solid var(--tinta); background: rgb
     justify-content: space-around;
     align-items: stretch;
     gap: 2px;
-    padding: 6px 8px calc(6px + env(safe-area-inset-bottom));
-    background: rgba(255, 255, 255, 0.97);
-    backdrop-filter: blur(14px);
+    padding: 6px 6px calc(6px + env(safe-area-inset-bottom));
+    background: var(--permukaan);
     border-top: 1px solid var(--garis);
-    box-shadow: 0 -4px 20px rgba(22, 32, 74, 0.07);
-    overflow-x: auto;
+    box-shadow: 0 -4px 20px rgba(22, 32, 74, 0.08);
   }
   .sisi nav a {
     flex: 1 1 0;
-    min-width: 54px;
+    min-width: 0;
     flex-direction: column;
     justify-content: center;
     align-items: center;
     gap: 3px;
-    padding: 6px 4px;
-    border-radius: 12px;
+    padding: 6px 2px;
+    border-radius: 10px;
     font-size: 11px;
     line-height: 1.15;
     text-align: center;
+    overflow: hidden;
   }
   .sisi nav a svg { width: 20px; height: 20px; }
   .sisi nav a.aktif {
